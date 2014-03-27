@@ -1,0 +1,3 @@
+require "./minifier"
+
+run Cuba
