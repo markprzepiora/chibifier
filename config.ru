@@ -1,3 +1,3 @@
-require "./minifier"
+require "./app"
 
 run Cuba

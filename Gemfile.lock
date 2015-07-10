@@ -1,13 +1,20 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    coderay (1.1.0)
     cuba (3.1.1)
       rack
     json (1.8.1)
+    method_source (0.8.2)
+    pry (0.10.1)
+      coderay (~> 1.1.0)
+      method_source (~> 0.8.1)
+      slop (~> 3.4)
     puma (2.8.1)
       rack (>= 1.1, < 2.0)
     rack (1.5.2)
     redis (3.0.5)
+    slop (3.6.0)
 
 PLATFORMS
   ruby
@@ -15,5 +22,9 @@ PLATFORMS
 DEPENDENCIES
   cuba
   json
+  pry
   puma
   redis
+
+BUNDLED WITH
+   1.10.5
