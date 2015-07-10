@@ -5,4 +5,8 @@ gem 'redis'
 gem 'cuba'
 gem 'json'
 gem 'puma'
-gem 'pry'
+gem 'connection_pool'
+
+group :development do
+  gem 'pry'
+end
