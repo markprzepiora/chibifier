@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+ruby_exe="${RUBY:-ruby}"
+
+while true; do
+  "$ruby_exe" -S bundle exec puma -C config/puma.rb
+  sleep 0.1
+done

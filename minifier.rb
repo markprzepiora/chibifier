@@ -1,94 +1,124 @@
 require 'bundler/setup'
 require 'redis'
+require 'lift'
+require 'connection_pool'
 
-NAMESPACE = 'shortenr-' + (ENV['SHORTENR_NAMESPACE'] || 'development')
-SECRET = ENV["SHORTENR_SECRET"] || 'foobarbaz'
+module Shortenr
+  class Config
+    include Lift
+    attr_accessor :redis, :namespace
 
-def assert(condition, message = nil)
-  if !condition
-    fail message || yield
-  end
-end
-
-class Shortenr
-  def initialize(redis = nil)
-    @redis = redis || Redis.new
+    def prefix
+      'shortenr-' + namespace
+    end
   end
 
-  # DANGER - be careful with this.
-  def clear_all!(namespace = nil, confirmation = nil)
-    unless namespace && confirmation && (confirmation == namespace)
-      fail "you must call clear_all! with the namespace to delete twice - e.g. clear_all!('development', 'development')"
+  class App
+    def initialize(options = {})
+      config = Config.new(options)
+
+      assert config.redis, "you must specify a redis connection, 'redis'"
+      assert config.namespace, "you must specify a namespace, 'namespace'"
+
+      @config = config
     end
 
-    @redis.keys("shortenr-#{namespace}:*").each{ |key| @redis.del(key) }
-  end
+    # Public API
 
-  def key_for_code(code)
-    "#{NAMESPACE}:codes:#{code}"
-  end
-
-  def url_for_code(code)
-    @redis.hget(key_for_code(code), :url)
-  end
-
-  # Debug function - get a hash of all URLs mapped to their codes.
-  def all_urls_to_codes
-    @redis.hgetall("#{NAMESPACE}:reverse_lookup")
-  end
-
-  # Debug function - the inverse of the above.
-  def all_codes_to_urls
-    all_urls_to_codes.invert
-  end
-
-  # Debug function - delete a URL by its code
-  def delete_code(code)
-    url = url_for_code(code) or return
-    @redis.del key_for_code(code)
-    @redis.hdel "#{NAMESPACE}:reverse_lookup", url
-  end
-
-  def delete_url(url)
-    code = code_for_url(url) or return
-    @redis.del key_for_code(code)
-    @redis.hdel "#{NAMESPACE}:reverse_lookup", url
-  end
-
-  def add_url(url)
-    code_for_url(url) || add_new_url(url)
-  end
-
-    def code_for_url(url)
-      @redis.hget("#{NAMESPACE}:reverse_lookup", url)
+    def url_for_code(code)
+      redis.hget(key_for_code(code), :url)
     end
 
-  def add_new_url(url)
-    begin
-      num = @redis.incr("#{NAMESPACE}:last_code_number")
-      code = num.to_s(36)
-    end while url_for_code(code)
-    add_new_code(code, url)
-  end
+    def add_url(url)
+      code_for_url(url) || add_new_url(url)
+    end
+
+    def stats_for_code(code)
+      key = key_for_code(code)
+      { code: code, url: redis.hget(key, :url), clicks: redis.hget(key, :clicks).to_i }
+    end
+
+    def increment_clicks(code)
+      key = key_for_code(code)
+      redis.hincrby key, :clicks, 1
+    end
+
+    # Debug functions
+
+    # DANGER - be careful with this.
+    def clear_all!(namespace = nil)
+      unless namespace && (namespace == @config.namespace)
+        fail "you must call clear_all! with the current namespace - e.g. clear_all!('development')"
+      end
+
+      redis.keys(key("*")).each{ |key| redis.del(key) }
+    end
+
+    # Debug function - get a hash of all URLs mapped to their codes.
+    def all_urls_to_codes
+      redis.hgetall(key("reverse_lookup"))
+    end
+
+    # Debug function - the inverse of the above.
+    def all_codes_to_urls
+      all_urls_to_codes.invert
+    end
+
+    # Debug function - delete a URL by its code
+    def delete_code(code)
+      url = url_for_code(code) or return
+      redis.del key_for_code(code)
+      redis.hdel key("reverse_lookup"), url
+    end
+
+    # Debug function - delete a URL
+    def delete_url(url)
+      code = code_for_url(url) or return
+      redis.del key_for_code(code)
+      redis.hdel key("reverse_lookup"), url
+    end
+
+    private
+
+    def redis
+      @config.redis
+    end
+
+    def key(key)
+      "#{@config.prefix}:#{key}"
+    end
+
+    def key_for_code(code)
+      key("codes:#{code}")
+    end
+
+    def add_new_url(url)
+      begin
+        num = redis.incr(key("last_code_number"))
+        code = num.to_s(36)
+      end while url_for_code(code)
+      add_new_code(code, url)
+    end
 
     def add_new_code(code, url)
-      key = key_for_code(code)
+      code_key = key_for_code(code)
 
-      assert !@redis.exists(key), "Tried to add #{code}, #{url} but code #{code} already exists."
+      assert !redis.exists(code_key), "Tried to add #{code}, #{url} but code #{code} already exists."
 
-      @redis.hset(key, :url, url)
-      @redis.hset(key, :clicks, 0)
-      @redis.hset("#{NAMESPACE}:reverse_lookup", url, code)
+      redis.hset(code_key, :url, url)
+      redis.hset(code_key, :clicks, 0)
+      redis.hset(key("reverse_lookup"), url, code)
       code
     end
 
-  def stats_for_code(code)
-    key = key_for_code(code)
-    { code: code, url: @redis.hget(key, :url), clicks: @redis.hget(key, :clicks) }
-  end
+    def code_for_url(url)
+      redis.hget(key("reverse_lookup"), url)
+    end
 
-  def increment_clicks(code)
-    key = key_for_code(code)
-    @redis.hincrby key, :clicks, 1
+    def assert(condition, message = nil)
+      if !condition
+        fail message || yield
+      end
+    end
   end
 end

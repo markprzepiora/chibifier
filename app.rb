@@ -5,40 +5,77 @@ require 'connection_pool'
 
 require_relative 'minifier'
 
-$redis_pool = ConnectionPool.new(size: 5, timeout: 5) { Redis.new }
-
-Cuba.define do
-  $redis_pool.with do |redis|
-    shortenr = Shortenr.new(redis)
-
-    # Secret routes
-    on param("secret") do |secret|
-      if secret != SECRET
-        res.status = 404
-        res.write "Not found"
-        halt(res.finish)
-      end
-
-      on get, 'ra/:code/stats' do |code|
-        res.write shortenr.stats_for_code(code).to_json
-      end
-
-      on post, root, param("url") do |url|
-        code = shortenr.add_url(url)
-        res.write shortenr.stats_for_code(code).to_json
+module Shortenr
+  class API < Cuba
+    def with_shortenr
+      @redis_pool.with do |redis|
+        shortenr = Shortenr::App.new(redis: redis, namespace: @namespace)
+        yield(shortenr)
       end
     end
 
-    on get, 'ra/:code' do |code|
-      url = shortenr.url_for_code(code)
+    def initialize(redis_pool:, secret:, namespace:)
+      @redis_pool = redis_pool
+      @secret     = secret
+      @namespace  = namespace
 
-      if url
-        shortenr.increment_clicks(code)
-        res.redirect url
-      else
-        res.status = 404
-        res.write "Not found"
+      super() do
+        res["Content-Type"] = 'application/json'
+
+        with_shortenr do |shortenr|
+          # Secret routes
+          on authorized do
+            on get, 'ra/:code/stats' do |code|
+              res.write shortenr.stats_for_code(code).to_json
+            end
+
+            on post, root, param("url") do |url|
+              code = shortenr.add_url(url)
+              res.write shortenr.stats_for_code(code).to_json
+            end
+
+            on get, 'debug' do
+              res.write(
+                Hash[*instance_variables.map{ |n| [n, instance_variable_get(n)] }.flatten(1)].
+                to_json
+              )
+            end
+          end
+
+          on get, existing_code_url(shortenr) do |code, url|
+            shortenr.increment_clicks(code)
+            res.redirect(url)
+          end
+
+          on true do
+            halt_404
+          end
+        end
       end
+    end
+
+    private \
+    def halt_404
+      res.status = 404
+      res.write({ error: "Not found" }.to_json)
+      halt(res.finish)
+    end
+
+    private \
+    def existing_code_url(shortenr)
+      matcher = %r{\A/ra/(?<code>[0-9a-z]+)\z}
+
+      lambda {
+        match = env['PATH_INFO'].match(matcher) or return false
+        url = shortenr.url_for_code(match[:code]) or return false
+        captures.push(match[:code], url)
+        true
+      }
+    end
+
+    private \
+    def authorized
+      lambda { req['secret'] == @secret }
     end
   end
 end
