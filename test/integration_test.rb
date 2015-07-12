@@ -50,14 +50,14 @@ Class.new(ShortenrIntegrationTest) do
     get "/ra/1"
     get "/ra/1"
 
-    authorized_get "/admin/codes/1/stats"
+    authorized_get "/admin/codes/1"
 
     assert_equal 2, json[:clicks]
   end
 
   def test_stats_when_unauthorized
     add_url "http://www.google.ca"
-    get "/admin/codes/1/stats"
+    get "/admin/codes/1"
 
     assert_equal 404, last_response.status
     assert_equal({ error: "Not found" }, json)
@@ -88,7 +88,7 @@ Class.new(ShortenrIntegrationTest) do
 
   def test_admin_pages_with_empty_prefix
     code = add_url("http://bing.com")
-    authorized_get "/admin/codes/#{code}/stats"
+    authorized_get "/admin/codes/#{code}"
 
     assert_equal "http://bing.com", json[:url]
   end
