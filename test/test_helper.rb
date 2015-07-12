@@ -46,3 +46,19 @@ class ShortenrIntegrationTest < Minitest::Test
     get(url, params.merge(secret: 'secret'), *args, &block)
   end
 end
+
+class ShortenrUnitTest < Minitest::Test
+  def setup
+    app.clear_all!('test')
+  end
+
+  private
+
+  def app
+    @app ||= Shortenr::App.new(redis: redis, namespace: 'test')
+  end
+
+  def redis
+    @redis ||= Redis.new
+  end
+end

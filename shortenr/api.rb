@@ -68,7 +68,7 @@ module Shortenr
     end
 
     def existing_code_url(shortenr)
-      matcher = %r{\A/#{@url_prefix}(?<code>[0-9a-z]+)\z}
+      matcher = %r{\A/#{@url_prefix}(?<code>[0-9a-zA-Z]+)\z}
 
       lambda {
         match = env['PATH_INFO'].match(matcher) or return false

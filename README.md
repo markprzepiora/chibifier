@@ -7,7 +7,7 @@ Dependencies
 ------------
 
 - Ruby 2.2 (Probably works completely fine in 2.1, but untested.)
-- Redis
+- Redis (Tested on 3.0.2, but should work on earlier versions.)
 
 Configuration
 -------------
@@ -36,7 +36,7 @@ Adding a URL:
 
     # Outputs:
     #
-    #   {"code":"1","url":"https://ruby-lang.org","clicks":0}
+    #   {"code":"fOo","url":"https://ruby-lang.org","clicks":0}
 
 The secret can also be provided in the data.
 
@@ -44,11 +44,11 @@ The secret can also be provided in the data.
 
     # Outputs:
     #
-    #   {"code":"2","url":"http://redis.io/","clicks":0}
+    #   {"code":"B4r","url":"http://redis.io/","clicks":0}
 
 Visiting a URL:
 
-    curl -i http://127.0.0.1:9293/1
+    curl -i http://127.0.0.1:9293/fOo
 
     # Outputs:
     #
@@ -63,21 +63,19 @@ Seeing all URLs in the system:
 
     # Outputs:
     #
-    #   {"1":"https://ruby-lang.org","2":"http://redis.io/"}
+    #   {"fOo":"https://ruby-lang.org","B4r":"http://redis.io/"}
 
 Checking a URL's stats:
 
-    curl -H 'X-Shortenr-Secret: changeme' http://127.0.0.1:9293/admin/codes/1
+    curl -H 'X-Shortenr-Secret: changeme' http://127.0.0.1:9293/admin/codes/fOo
 
     # Outputs:
     #
-    #   {"code":"1","url":"https://ruby-lang.org","clicks":1}
+    #   {"code":"fOo","url":"https://ruby-lang.org","clicks":1}
 
-Shortenr will iterate through all lowercase alphanumeric strings in order.
-Codes are NOT randomized, so be aware they can easily be guessed and should not
-be considered private.
-
-No codes are excluded either - so you can end up with obscene codes.
+Shortenr generates codes as random, alphanumeric strings three characters in
+length or longer. Please be aware that there is no blacklist for codes, so you
+can end up with obscene codes.
 
 Is it good?
 -----------

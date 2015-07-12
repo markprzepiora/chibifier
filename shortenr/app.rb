@@ -1,10 +1,20 @@
 require 'bundler/setup'
+require 'forwardable'
 require_relative 'assertions'
-require_relative 'base_conversion'
+require_relative 'random_code_generator'
 
 module Shortenr
+  class Connection < Struct.new(:redis, :namespace)
+    def key(key)
+      "shortenr-#{namespace}:#{key}"
+    end
+  end
+
   class App
     include Assertions
+    extend Forwardable
+
+    def_delegators :@connection, :redis, :namespace, :key
 
     # Public: Initialize a new Shortenr instance.
     #
@@ -12,8 +22,20 @@ module Shortenr
     # namespace - A string like "development". In this case, Shortenr will
     #             create keys in Redis prefixed with "shortenr-development:".
     def initialize(redis:, namespace:)
-      @redis = redis
-      @namespace = namespace
+      @connection = Connection.new(redis, namespace)
+    end
+
+    # Public: Create a short code for a given URL.
+    #
+    # url - The URL we are minifying.
+    #
+    # Returns the new code on success, nil on (extremely unlikely) failure.
+    def add_url(url)
+      RandomCodeGenerator.codes(@connection).with_index.take(100).each do |code, i|
+        return code if add_new_code(code, url)
+      end
+
+      nil
     end
 
     # Public: Look up the full-length URL for a given short code.
@@ -31,28 +53,6 @@ module Shortenr
     # Returns a URL String, or nil if the code does not exist.
     def url_for_code(code)
       redis.hget(key_for_code(code), :url)
-    end
-
-    # Public: Add a URL to the database, either generating a new code or
-    # looking up its existing one.
-    #
-    # url - a URL String
-    #
-    # Examples
-    #
-    #   add_url("http://www.google.ca")
-    #   # => "1"
-    #
-    #   add_url("http://www.bing.com")
-    #   # => "2"
-    #
-    #   add_url("http://www.google.ca")
-    #   # => "1"
-    #
-    # Returns a short code String, which may have already existed in the
-    # database before the call.
-    def add_url(url)
-      code_for_url(url) || add_new_url(url)
     end
 
     # Public: Generate some statistics for a given code.
@@ -91,7 +91,7 @@ module Shortenr
     # produces undefined behaviour.
     def increment_clicks(code)
       key = key_for_code(code)
-      redis.hincrby key, :clicks, 1
+      redis.hincrby(key, :clicks, 1)
     end
 
     # Public: Delete all saved data.
@@ -100,32 +100,27 @@ module Shortenr
     #             the operation will not continue.
     #
     # Returns an array of the keys that have been deleted.
-    def clear_all!(namespace = nil)
-      unless namespace && (namespace == @namespace)
+    def clear_all!(given_namespace = nil)
+      unless given_namespace && (given_namespace == namespace)
         fail "you must call clear_all! with the current namespace - e.g. clear_all!('development')"
       end
 
       redis.keys(key("*")).each{ |key| redis.del(key) }
     end
 
-    # Public: Generate a hash of all saved URLs -> codes in the database.
-    #
-    # Examples
-    #
-    #   all_urls_to_codes
-    #   # => { "http://www.google.ca" => "1", "http://www.bing.com" => "2" }
-    def all_urls_to_codes
-      redis.hgetall(key("reverse_lookup"))
-    end
-
     # Public: Generate a hash of all saved codes -> URLs in the database.
+    # Warning: This is not a particularly efficient operation.
     #
     # Examples
     #
     #   all_codes_to_urls
     #   # => { "1" => "http://www.google.ca", "2" => "http://www.bing.com" }
     def all_codes_to_urls
-      all_urls_to_codes.invert
+      codes_and_urls = redis.smembers(key("codes")).map do |code|
+        [code, url_for_code(code)]
+      end
+
+      Hash[*codes_and_urls.flatten(1)]
     end
 
     # Public: Delete a code.
@@ -137,79 +132,42 @@ module Shortenr
     #   add_url("http://www.bing.com")
     #   # => "2"
     #   delete_code("2")
-    #   # => 1
+    #   # => true
     #   delete_code("2")
     #   # => nil
     #
-    # Returns 1 if a code was deleted, nil else.
+    # Returns true if a code was deleted, nil else.
     def delete_code(code)
-      url = url_for_code(code) or return
-      redis.del key_for_code(code)
-      redis.hdel key("reverse_lookup"), url
-    end
+      result = redis.multi do
+        redis.del(key_for_code(code))
+        redis.srem(key("codes"), code)
+      end
 
-    # Public: Delete a URL.
-    #
-    # url - a URL String.
-    #
-    # Examples
-    #
-    #   add_url("http://www.bing.com")
-    #   delete_url("http://www.bing.com")
-    #   # => 1
-    #   delete_url("http://www.bing.com")
-    #   # => nil
-    #
-    # Returns 1 if the URL was deleted, nil else.
-    def delete_url(url)
-      code = code_for_url(url) or return
-      redis.del key_for_code(code)
-      redis.hdel key("reverse_lookup"), url
+      result == [1, true]
     end
 
     private
-
-    def redis
-      @redis
-    end
-
-    def key(key)
-      "#{prefix}:#{key}"
-    end
 
     def key_for_code(code)
       key("codes:#{code}")
     end
 
-    def add_new_url(url)
-      begin
-        num = redis.incr(key("last_code_number"))
-        code = BaseConversion.number_in_base(num, 62)
-      end until verify_new_code(code)
-      add_new_code(code, url)
-    end
-
-    def verify_new_code(code)
-      !url_for_code(code)
-    end
-
+    # Private: Try to add a new URL at a given code.
+    #
+    # code - The short code to use.
+    # url  - The URL to redirect to.
+    #
+    # Returns true on success, false if the code is unavailable.
     def add_new_code(code, url)
       code_key = key_for_code(code)
 
-      assert !redis.exists(code_key), "Tried to add #{code}, #{url} but code #{code} already exists."
+      result = redis.multi do
+        redis.sadd(key("codes"), code)
+        redis.hsetnx(code_key, :url, url)
+        redis.hsetnx(code_key, :clicks, 0)
+      end
 
-      redis.hset(code_key, :url, url)
-      redis.hset(code_key, :clicks, 0)
-      redis.hset(key("reverse_lookup"), url, code)
-      code
-    end
-
-    def code_for_url(url)
-      redis.hget(key("reverse_lookup"), url)
-    end
-
-    def prefix
-      'shortenr-' + @namespace
+      result == [true, true, true]
     end
   end
 end

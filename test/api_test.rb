@@ -2,62 +2,66 @@ require_relative 'test_helper'
 
 Class.new(ShortenrIntegrationTest) do
   def test_adding_url
-    add_url "http://www.google.ca"
+    code = add_url("http://www.google.ca")
 
     assert_equal 200, last_response.status
-    assert_equal "1", json[:code]
+    refute_empty json[:code]
     assert_equal "http://www.google.ca", json[:url]
     assert_equal 0, json[:clicks]
   end
 
   def test_adding_same_url_twice
-    add_url "http://www.google.ca"
-    add_url "http://www.google.ca"
+    code         = add_url("http://www.google.ca")
+    another_code = add_url("http://www.google.ca")
+
+    refute_equal code, another_code
 
     assert_equal 200, last_response.status
-    assert_equal "1", json[:code]
     assert_equal "http://www.google.ca", json[:url]
     assert_equal 0, json[:clicks]
   end
 
   def test_adding_several_urls
-    add_url "http://www.google.ca"
-    add_url "http://www.google.com"
-    add_url "http://www.google.co.uk"
+    codes = [
+      add_url("http://www.google.ca"),
+      add_url("http://www.google.com"),
+      add_url("http://www.google.co.uk")
+    ]
+
+    assert_equal 3, codes.uniq.count
 
     assert_equal 200, last_response.status
-    assert_equal "3", json[:code]
     assert_equal "http://www.google.co.uk", json[:url]
     assert_equal 0, json[:clicks]
   end
 
   def test_visiting_url
-    add_url "http://www.google.ca"
-    get "/ra/1"
+    code = add_url("http://www.google.ca")
+    get "/ra/#{code}"
 
     assert_equal "http://www.google.ca", last_response.header["Location"]
   end
 
   def test_visiting_with_invalid_code
-    add_url "http://www.google.ca"
-    get "/ra/123"
+    code = add_url("http://www.google.ca")
+    get "/ra/123123123"
 
     assert_equal 404, last_response.status
   end
 
   def test_visit_counter
-    add_url "http://www.google.ca"
-    get "/ra/1"
-    get "/ra/1"
+    code = add_url("http://www.google.ca")
+    get "/ra/#{code}"
+    get "/ra/#{code}"
 
-    authorized_get "/admin/codes/1"
+    authorized_get "/admin/codes/#{code}"
 
     assert_equal 2, json[:clicks]
   end
 
   def test_stats_when_unauthorized
-    add_url "http://www.google.ca"
-    get "/admin/codes/1"
+    code = add_url("http://www.google.ca")
+    get "/admin/codes/#{code}"
 
     assert_equal 404, last_response.status
     assert_equal({ error: "Not found" }, json)
