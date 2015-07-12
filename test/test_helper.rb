@@ -15,33 +15,33 @@ require_relative '../shortenr/api'
 class ShortenrIntegrationTest < Minitest::Test
   include Rack::Test::Methods
 
-  def app
-    @app ||= begin
-      Shortenr::API.new(
-        redis_pool: ConnectionPool.new(size: 5, timeout: 5) { Redis.new },
-        secret:     'secret',
-        namespace:  'test'
-      )
-    end
-  end
-
   def setup
     app.with_shortenr do |shortenr|
       shortenr.clear_all!('test')
     end
   end
 
-  private \
+  private
+
+  def app
+    @app ||= begin
+      Shortenr::API.new(
+        redis_pool: ConnectionPool.new(size: 5, timeout: 5) { Redis.new },
+        secret:     'secret',
+        namespace:  'test',
+        url_prefix: 'ra'
+      )
+    end
+  end
+
   def json
     JSON.parse(last_response.body, symbolize_names: true)
   end
 
-  private \
   def authorized_post(url, params = {}, *args, &block)
     post(url, params.merge(secret: 'secret'), *args, &block)
   end
 
-  private \
   def authorized_get(url, params = {}, *args, &block)
     get(url, params.merge(secret: 'secret'), *args, &block)
   end
