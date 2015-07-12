@@ -1,9 +1,8 @@
 require 'bundler/setup'
 require 'cuba'
 require 'json'
-require 'connection_pool'
 
-require_relative 'minifier'
+require_relative 'app'
 
 module Shortenr
   class API < Cuba

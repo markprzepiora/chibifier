@@ -7,7 +7,10 @@ require 'minitest'
 require 'minitest/autorun'
 require 'rack/test'
 require 'pry'
-require_relative '../app'
+require 'connection_pool'
+require 'redis'
+
+require_relative '../shortenr/api'
 
 class ShortenrIntegrationTest < Minitest::Test
   include Rack::Test::Methods

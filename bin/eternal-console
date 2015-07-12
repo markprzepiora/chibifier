@@ -3,6 +3,6 @@
 ruby_exe="${RUBY:-ruby}"
 
 while true; do
-  "$ruby_exe" -S bundle exec pry -r./minifier
+  "$ruby_exe" -S bundle exec pry -r./shortenr/app
   sleep 0.1
 done

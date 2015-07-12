@@ -1,19 +1,17 @@
 require 'bundler/setup'
-require 'redis'
 require 'lift'
-require 'connection_pool'
 
 module Shortenr
-  class Config
-    include Lift
-    attr_accessor :redis, :namespace
-
-    def prefix
-      'shortenr-' + namespace
-    end
-  end
-
   class App
+    class Config
+      include Lift
+      attr_accessor :redis, :namespace
+
+      def prefix
+        'shortenr-' + namespace
+      end
+    end
+
     def initialize(options = {})
       config = Config.new(options)
 
