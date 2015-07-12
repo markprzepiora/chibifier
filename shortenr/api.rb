@@ -29,6 +29,10 @@ module Shortenr
               res.write shortenr.stats_for_code(code).to_json
             end
 
+            on get, "codes" do
+              res.write shortenr.all_codes_to_urls.to_json
+            end
+
             on post, "codes", param("url") do |url|
               code = shortenr.add_url(url)
               res.write shortenr.stats_for_code(code).to_json
