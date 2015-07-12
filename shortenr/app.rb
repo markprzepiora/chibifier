@@ -1,5 +1,6 @@
 require 'bundler/setup'
 require_relative 'assertions'
+require_relative 'base_conversion'
 
 module Shortenr
   class App
@@ -183,9 +184,13 @@ module Shortenr
     def add_new_url(url)
       begin
         num = redis.incr(key("last_code_number"))
-        code = num.to_s(36)
-      end while url_for_code(code)
+        code = BaseConversion.number_in_base(num, 62)
+      end until verify_new_code(code)
       add_new_code(code, url)
+    end
+
+    def verify_new_code(code)
+      !url_for_code(code)
     end
 
     def add_new_code(code, url)
