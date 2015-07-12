@@ -1,24 +1,10 @@
 require 'bundler/setup'
-require 'lift'
 
 module Shortenr
   class App
-    class Config
-      include Lift
-      attr_accessor :redis, :namespace
-
-      def prefix
-        'shortenr-' + namespace
-      end
-    end
-
-    def initialize(options = {})
-      config = Config.new(options)
-
-      assert config.redis, "you must specify a redis connection, 'redis'"
-      assert config.namespace, "you must specify a namespace, 'namespace'"
-
-      @config = config
+    def initialize(redis:, namespace:)
+      @redis = redis
+      @namespace = namespace
     end
 
     # Public API
@@ -45,7 +31,7 @@ module Shortenr
 
     # DANGER - be careful with this.
     def clear_all!(namespace = nil)
-      unless namespace && (namespace == @config.namespace)
+      unless namespace && (namespace == @namespace)
         fail "you must call clear_all! with the current namespace - e.g. clear_all!('development')"
       end
 
@@ -79,11 +65,11 @@ module Shortenr
     private
 
     def redis
-      @config.redis
+      @redis
     end
 
     def key(key)
-      "#{@config.prefix}:#{key}"
+      "#{prefix}:#{key}"
     end
 
     def key_for_code(code)
@@ -117,6 +103,10 @@ module Shortenr
       if !condition
         fail message || yield
       end
+    end
+
+    def prefix
+      'shortenr-' + @namespace
     end
   end
 end

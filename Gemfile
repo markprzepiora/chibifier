@@ -16,9 +16,6 @@ gem 'json', '~> 1.8.3'
 # Generic connection pool for Ruby
 gem 'connection_pool', '~> 2.2.0'
 
-# Hash + Block initialization for easy object construction
-gem 'lift', '~> 0.1.0'
-
 # Rake is a Make-like program implemented in Ruby
 gem 'rake', '~> 10.4.2'
 

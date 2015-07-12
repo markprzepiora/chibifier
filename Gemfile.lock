@@ -6,7 +6,6 @@ GEM
     cuba (3.4.0)
       rack
     json (1.8.3)
-    lift (0.1.0)
     method_source (0.8.2)
     minitest (5.7.0)
     pry (0.10.1)
@@ -29,7 +28,6 @@ DEPENDENCIES
   connection_pool (~> 2.2.0)
   cuba (~> 3.4.0)
   json (~> 1.8.3)
-  lift (~> 0.1.0)
   minitest (~> 5.7.0)
   pry
   puma (~> 2.11.3)
