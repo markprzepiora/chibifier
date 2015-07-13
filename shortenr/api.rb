@@ -79,7 +79,10 @@ module Shortenr
     end
 
     def authorized
-      lambda { req['secret'] == @secret }
+      lambda do
+        (req['secret'] == @secret) ||
+        (env['HTTP_X_SHORTENR_SECRET'] == @secret)
+      end
     end
   end
 end
