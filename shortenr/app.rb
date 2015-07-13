@@ -1,7 +1,10 @@
 require 'bundler/setup'
+require_relative 'assertions'
 
 module Shortenr
   class App
+    include Assertions
+
     # Public: Initialize a new Shortenr instance.
     #
     # redis     - A Redis instance.
@@ -198,12 +201,6 @@ module Shortenr
 
     def code_for_url(url)
       redis.hget(key("reverse_lookup"), url)
-    end
-
-    def assert(condition, message = nil)
-      if !condition
-        fail message || yield
-      end
     end
 
     def prefix
