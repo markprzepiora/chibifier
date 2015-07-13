@@ -1,6 +1,6 @@
 require_relative 'test_helper'
 
-Class.new(ShortenrIntegrationTest) do
+Class.new(ChibifierIntegrationTest) do
   def test_adding_url
     code = add_url("http://www.google.ca")
 
@@ -82,7 +82,7 @@ Class.new(ShortenrIntegrationTest) do
   end
 end
 
-Class.new(ShortenrIntegrationTest) do
+Class.new(ChibifierIntegrationTest) do
   def test_fetching_an_empty_prefix
     code = add_url("http://bing.com")
     get "/#{code}"
@@ -101,7 +101,7 @@ Class.new(ShortenrIntegrationTest) do
 
   def app
     @app ||= begin
-      Shortenr::API.new(
+      Chibifier::API.new(
         redis_pool: ConnectionPool.new(size: 5, timeout: 5) { Redis.new },
         secret:     'secret',
         namespace:  'test',

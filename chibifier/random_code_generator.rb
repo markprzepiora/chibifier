@@ -1,7 +1,7 @@
 require 'securerandom'
 require_relative 'base_conversion'
 
-module Shortenr
+module Chibifier
   module RandomCodeGenerator
     def self.codes(conn)
       return to_enum(__callee__, conn).lazy unless block_given?

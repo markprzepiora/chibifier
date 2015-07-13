@@ -1,5 +1,5 @@
-Shortenr: a little URL shortener
-================================
+Chibifier: a little URL shortener
+=================================
 
 This is a work-in-progress. It works! It's fast! But some assembly is required.
 
@@ -12,15 +12,15 @@ Dependencies
 Configuration
 -------------
 
-Shortenr is configured using environment variables.
+Chibifier is configured using environment variables.
 
 - `REDIS_URL` - The Redis database to use. Example:
   `redis://:somepassword@127.0.0.1:6380/2`
-- `SHORTENR_SECRET` - The secret string you must pass as a query param to some
+- `CHIBIFIER_SECRET` - The secret string you must pass as a query param to some
   routes (namely adding a new URL and fetching stats). 
-- `SHORTENR_NAMESPACE` - If this value is `foo`, then Shortenr will create keys
-  in the Redis database with names prefixed by `shortenr-foo:`.
-- `SHORTENR_URL_PREFIX` - If set to `x`, then the server will serve code `123`
+- `CHIBIFIER_NAMESPACE` - If this value is `foo`, then Chibifier will create keys
+  in the Redis database with names prefixed by `chibifier-foo:`.
+- `CHIBIFIER_URL_PREFIX` - If set to `x`, then the server will serve code `123`
   at `/x/123` instead of at `/123`. This can be useful if you want your URLs to
   have clever names.
 
@@ -32,7 +32,7 @@ script, which will run on port 9293.
 
 Adding a URL:
 
-    curl -X POST -d url='https://ruby-lang.org' -H 'X-Shortenr-Secret: changeme' http://127.0.0.1:9293/admin/codes
+    curl -X POST -d url='https://ruby-lang.org' -H 'X-Chibifier-Secret: changeme' http://127.0.0.1:9293/admin/codes
 
     # Outputs:
     #
@@ -59,7 +59,7 @@ Visiting a URL:
 
 Seeing all URLs in the system:
 
-    curl -H 'X-Shortenr-Secret: changeme' http://127.0.0.1:9293/admin/codes
+    curl -H 'X-Chibifier-Secret: changeme' http://127.0.0.1:9293/admin/codes
 
     # Outputs:
     #
@@ -67,13 +67,13 @@ Seeing all URLs in the system:
 
 Checking a URL's stats:
 
-    curl -H 'X-Shortenr-Secret: changeme' http://127.0.0.1:9293/admin/codes/fOo
+    curl -H 'X-Chibifier-Secret: changeme' http://127.0.0.1:9293/admin/codes/fOo
 
     # Outputs:
     #
     #   {"code":"fOo","url":"https://ruby-lang.org","clicks":1}
 
-Shortenr generates codes as random, alphanumeric strings three characters in
+Chibifier generates codes as random, alphanumeric strings three characters in
 length or longer. Please be aware that there is no blacklist for codes, so you
 can end up with obscene codes.
 

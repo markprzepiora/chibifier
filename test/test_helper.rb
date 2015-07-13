@@ -1,6 +1,6 @@
-ENV["SHORTENR_ENV"] ||= 'test'
+ENV["CHIBIFIER_ENV"] ||= 'test'
 ENV["RACK_ENV"] ||= 'test'
-ENV["SHORTENR_SECRET"] ||= 'test_secret'
+ENV["CHIBIFIER_SECRET"] ||= 'test_secret'
 
 require 'bundler/setup'
 require 'minitest'
@@ -10,14 +10,14 @@ require 'pry'
 require 'connection_pool'
 require 'redis'
 
-require_relative '../shortenr/api'
+require_relative '../chibifier/api'
 
-class ShortenrIntegrationTest < Minitest::Test
+class ChibifierIntegrationTest < Minitest::Test
   include Rack::Test::Methods
 
   def setup
-    app.with_shortenr do |shortenr|
-      shortenr.clear_all!('test')
+    app.with_chibifier do |chibifier|
+      chibifier.clear_all!('test')
     end
   end
 
@@ -25,7 +25,7 @@ class ShortenrIntegrationTest < Minitest::Test
 
   def app
     @app ||= begin
-      Shortenr::API.new(
+      Chibifier::API.new(
         redis_pool: ConnectionPool.new(size: 5, timeout: 5) { Redis.new },
         secret:     'secret',
         namespace:  'test',
@@ -47,7 +47,7 @@ class ShortenrIntegrationTest < Minitest::Test
   end
 end
 
-class ShortenrUnitTest < Minitest::Test
+class ChibifierUnitTest < Minitest::Test
   def setup
     app.clear_all!('test')
   end
@@ -55,7 +55,7 @@ class ShortenrUnitTest < Minitest::Test
   private
 
   def app
-    @app ||= Shortenr::App.new(redis: redis, namespace: 'test')
+    @app ||= Chibifier::App.new(redis: redis, namespace: 'test')
   end
 
   def redis

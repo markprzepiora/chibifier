@@ -3,10 +3,10 @@ require 'forwardable'
 require_relative 'assertions'
 require_relative 'random_code_generator'
 
-module Shortenr
+module Chibifier
   class Connection < Struct.new(:redis, :namespace)
     def key(key)
-      "shortenr-#{namespace}:#{key}"
+      "chibifier-#{namespace}:#{key}"
     end
   end
 
@@ -16,11 +16,11 @@ module Shortenr
 
     def_delegators :@connection, :redis, :namespace, :key
 
-    # Public: Initialize a new Shortenr instance.
+    # Public: Initialize a new Chibifier instance.
     #
     # redis     - A Redis instance.
-    # namespace - A string like "development". In this case, Shortenr will
-    #             create keys in Redis prefixed with "shortenr-development:".
+    # namespace - A string like "development". In this case, Chibifier will
+    #             create keys in Redis prefixed with "chibifier-development:".
     def initialize(redis:, namespace:)
       @connection = Connection.new(redis, namespace)
     end

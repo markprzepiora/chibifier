@@ -4,12 +4,12 @@ require 'json'
 
 require_relative 'app'
 
-module Shortenr
+module Chibifier
   class API < Cuba
-    def with_shortenr
+    def with_chibifier
       @redis_pool.with do |redis|
-        shortenr = Shortenr::App.new(redis: redis, namespace: @namespace)
-        yield(shortenr)
+        chibifier = Chibifier::App.new(redis: redis, namespace: @namespace)
+        yield(chibifier)
       end
     end
 
@@ -22,32 +22,32 @@ module Shortenr
       super() do
         res["Content-Type"] = "application/json"
 
-        with_shortenr do |shortenr|
+        with_chibifier do |chibifier|
           # Secret routes - must add the correct secret as a query param, or
           # these will not match.
           on authorized, "admin" do
             on "codes" do
               # GET /admin/codes
               on get, root do
-                res.write shortenr.all_codes_to_urls.to_json
+                res.write chibifier.all_codes_to_urls.to_json
               end
 
               # GET /admin/codes/:code
               on get, ":code" do |code|
-                res.write shortenr.stats_for_code(code).to_json
+                res.write chibifier.stats_for_code(code).to_json
               end
 
               # POST /admin/codes
               on post, root, param("url") do |url|
-                code = shortenr.add_url(url)
-                res.write shortenr.stats_for_code(code).to_json
+                code = chibifier.add_url(url)
+                res.write chibifier.stats_for_code(code).to_json
               end
             end
           end
 
           # GET /<prefix>/:code
-          on get, existing_code_url(shortenr) do |code, url|
-            shortenr.increment_clicks(code)
+          on get, existing_code_url(chibifier) do |code, url|
+            chibifier.increment_clicks(code)
             res.redirect(url)
           end
 
@@ -67,12 +67,12 @@ module Shortenr
       halt(res.finish)
     end
 
-    def existing_code_url(shortenr)
+    def existing_code_url(chibifier)
       matcher = %r{\A/#{@url_prefix}(?<code>[0-9a-zA-Z]+)\z}
 
       lambda {
         match = env['PATH_INFO'].match(matcher) or return false
-        url = shortenr.url_for_code(match[:code]) or return false
+        url = chibifier.url_for_code(match[:code]) or return false
         captures.push(match[:code], url)
         true
       }
@@ -81,7 +81,7 @@ module Shortenr
     def authorized
       lambda do
         (req['secret'] == @secret) ||
-        (env['HTTP_X_SHORTENR_SECRET'] == @secret)
+        (env['HTTP_X_CHIBIFIER_SECRET'] == @secret)
       end
     end
   end

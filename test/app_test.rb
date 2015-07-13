@@ -1,6 +1,6 @@
 require_relative 'test_helper'
 
-Class.new(ShortenrUnitTest) do
+Class.new(ChibifierUnitTest) do
   def test_adding_and_retrieving_urls
     code_1 = app.add_url("http://www.google.ca")
     code_2 = app.add_url("http://www.google.ca")

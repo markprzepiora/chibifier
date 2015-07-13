@@ -1,4 +1,4 @@
-module Shortenr
+module Chibifier
   module Assertions
     def self.assert(condition, message = nil)
       if !condition

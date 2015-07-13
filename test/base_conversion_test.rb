@@ -1,5 +1,5 @@
 require_relative 'test_helper'
-require_relative '../shortenr/base_conversion'
+require_relative '../chibifier/base_conversion'
 
 Class.new(Minitest::Test) do
   def test_happy_paths
@@ -16,6 +16,6 @@ Class.new(Minitest::Test) do
   private
 
   def number_in_base(*args, &block)
-    Shortenr::BaseConversion.number_in_base(*args, &block)
+    Chibifier::BaseConversion.number_in_base(*args, &block)
   end
 end

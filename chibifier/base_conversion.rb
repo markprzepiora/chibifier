@@ -2,7 +2,7 @@ require_relative 'assertions'
 
 # Ruby's Fixnum#to_s(base) only works for base <= 36 ("0" through "z"). This
 # supports bases up to 62 ("0", ..., "9", "a", ..., "z", "A", ..., "Z").
-module Shortenr
+module Chibifier
   module BaseConversion
     extend Assertions
 
