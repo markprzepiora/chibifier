@@ -14,6 +14,13 @@ Class.new(ChibifierUnitTest) do
     assert_equal "http://www.google.com", app.url_for_code(code_3)
   end
 
+  def test_adding_url_when_adding_code_fails_repeatedly
+    app.stub :add_new_code, nil do
+      failed_code = app.add_url("http://www.google.ca")
+      assert_equal nil, failed_code
+    end
+  end
+
   def test_incrementing_clicks_and_generating_stats
     code = app.add_url("http://www.google.ca")
     app.increment_clicks(code)

@@ -31,11 +31,9 @@ module Chibifier
     #
     # Returns the new code on success, nil on (extremely unlikely) failure.
     def add_url(url)
-      RandomCodeGenerator.codes(@connection).with_index.take(100).each do |code, i|
-        return code if add_new_code(code, url)
+      RandomCodeGenerator.codes(@connection).take(100).find do |code|
+        add_new_code(code, url)
       end
-
-      nil
     end
 
     # Public: Look up the full-length URL for a given short code.
