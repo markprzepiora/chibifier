@@ -4,7 +4,9 @@ require_relative 'assertions'
 # supports bases up to 62 ("0", ..., "9", "a", ..., "z", "A", ..., "Z").
 module Chibifier
   module BaseConversion
-    extend Assertions
+    BASE_62_DIGITS = ('0'..'9').to_a + ('a'..'z').to_a + ('A'..'Z').to_a
+
+    include Assertions
 
     def self.number_in_base(number, base)
       assert(number >= 0) { "number must be non-negative, #{number} given" }
@@ -13,9 +15,8 @@ module Chibifier
     end
 
     private_class_method \
-    def self.base_components(x, base)
+    def self.base_components(q, base)
       components = []
-      q, r = x, nil
       begin
         q, r = q.divmod(base)
         components << r
@@ -25,13 +26,8 @@ module Chibifier
 
     private_class_method \
     def self.to_char(x)
-      case x
-      when 0..9 then x.to_s
-      when 10...36 then (x+97-10).chr
-      when 36...62 then (x+65-36).chr
-      else
-        fail("input must be between 0 and 61")
-      end
+      assert((0..61).include?(x)) { "input must be between 0 and 61, #{x} given" }
+      BASE_62_DIGITS[x]
     end
   end
 end
