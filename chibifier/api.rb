@@ -14,11 +14,18 @@ module Chibifier
     end
 
     def initialize(redis_pool:, secret:, namespace:, url_prefix:)
+      url_prefix = (url_prefix && url_prefix != "") ? "#{url_prefix}/" : ""
+
       @redis_pool = redis_pool
       @secret     = secret
       @namespace  = namespace
-      @url_prefix = (url_prefix && url_prefix != "") ? "#{url_prefix}/" : ""
-      @code_url_matcher = %r{\A/#{@url_prefix}(?<code>[0-9a-zA-Z]+)\z}
+      @code_url_matcher = %r{
+        \A
+        /                      # start with a slash:             /
+        #{url_prefix}          # followed by the prefix if any:  ra/
+        (?<code>[0-9a-zA-Z]+)  # then the code itself:           f0o
+        \z
+      }x
 
       super() do
         res["Content-Type"] = "application/json"
