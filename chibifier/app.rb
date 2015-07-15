@@ -5,8 +5,18 @@ require_relative 'random_code_generator'
 
 module Chibifier
   class Connection < Struct.new(:redis, :namespace)
-    def key(key)
-      "chibifier-#{namespace}:#{key}"
+    # Examples
+    #
+    #   key
+    #   # => "chibifier-test"
+    #
+    #   key(:codes)
+    #   # => "chibifier-test:codes"
+    #
+    #   key(:codes, "abc")
+    #   # => "chibifier-test:codes:abc"
+    def key(*keys)
+      ["chibifier-#{namespace}", *keys].join(":")
     end
   end
 
@@ -114,7 +124,7 @@ module Chibifier
     #   all_codes_to_urls
     #   # => { "1" => "http://www.google.ca", "2" => "http://www.bing.com" }
     def all_codes_to_urls
-      codes_and_urls = redis.smembers(key("codes")).map do |code|
+      codes_and_urls = redis.smembers(key(:codes)).map do |code|
         [code, url_for_code(code)]
       end
 
@@ -138,7 +148,7 @@ module Chibifier
     def delete_code(code)
       result = redis.multi do
         redis.del(key_for_code(code))
-        redis.srem(key("codes"), code)
+        redis.srem(key(:codes), code)
       end
 
       result == [1, true]
@@ -147,7 +157,7 @@ module Chibifier
     private
 
     def key_for_code(code)
-      key("codes:#{code}")
+      key(:codes, code)
     end
 
     # Private: Try to add a new URL at a given code.
