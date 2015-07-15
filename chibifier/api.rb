@@ -18,6 +18,7 @@ module Chibifier
       @secret     = secret
       @namespace  = namespace
       @url_prefix = (url_prefix && url_prefix != "") ? "#{url_prefix}/" : ""
+      @code_url_matcher = %r{\A/#{@url_prefix}(?<code>[0-9a-zA-Z]+)\z}
 
       super() do
         res["Content-Type"] = "application/json"
@@ -68,10 +69,8 @@ module Chibifier
     end
 
     def existing_code_url(chibifier)
-      matcher = %r{\A/#{@url_prefix}(?<code>[0-9a-zA-Z]+)\z}
-
       lambda {
-        match = env['PATH_INFO'].match(matcher) or return false
+        match = env['PATH_INFO'].match(@code_url_matcher) or return false
         url = chibifier.url_for_code(match[:code]) or return false
         captures.push(match[:code], url)
         true
