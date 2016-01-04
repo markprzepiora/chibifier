@@ -1,5 +1,5 @@
 source 'https://rubygems.org'
-ruby "2.2.2"
+ruby "2.2.4"
 
 # Cuba is a microframework for web applications
 gem 'cuba', '~> 3.4.0'
